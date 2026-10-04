@@ -24,6 +24,16 @@
         main.py            <- this launcher
         requirements.txt   <- dependencies (KataBump installs them for you)
 
+  FILE NAMES - DO NOT CONFUSE THEM (FAQ)
+  --------------------------------------
+  KataBump's required files depend on the server type:
+      Python server:    main.py  +  requirements.txt    <- this panel
+      Node.js server:   index.js +  package.json
+  This is a PYTHON panel: keep main.py + requirements.txt and NEVER rename
+  requirements.txt to index.js. index.js is JavaScript - it installs nothing
+  here and would break the automatic dependency install. If your server was
+  created as Node.js, switch it to Python in the "Startup" tab first.
+
   STEP BY STEP
   ------------
   1) Create the server
