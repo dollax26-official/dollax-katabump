@@ -2,35 +2,103 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================================
-  Dollax Panel  -  KataBump edition  (deploy = 2 files: main.py + requirements.txt)
+  Dollax Panel  -  KataBump edition        Deploy = 2 files, free-tier ready
+  (main.py + requirements.txt)
 =============================================================================
 
-  HOW TO DEPLOY ON KATABUMP            (control.katabump.com)
-  ----------------------------------------------------------
-  1) Create a server:  type = Python  (3.11 recommended; free plan works).
-  2) Upload these 2 files (Web file manager, SFTP, or connect this GitHub repo):
+  FULL DEPLOYMENT GUIDE - KATABUMP
+  ================================
+
+  WHAT YOU GET
+  ------------
+  The complete Dollax panel: inbounds, clients, subscriptions (4 designs),
+  nodes, hosts pool, Telegram control bot, 3x-ui style Outbounds/Routing
+  editors, activity logs, settings, multi-admin. This launcher installs it
+  on first start and runs light enough for the KataBump free tier.
+
+  REQUIREMENTS
+  ------------
+  - A KataBump server with type = Python (3.11 recommended; 3.10 / 3.12 OK).
+  - Free tier is enough: 308 MB RAM / 716 MB storage.
+  - Exactly two files:
         main.py            <- this launcher
-        requirements.txt   <- dependencies (KataBump installs them automatically)
-  3) Startup tab -> start command:      python main.py
-  4) Open your server URL / free *.kdns.fr domain and log in.
-     Default owner:  dollax26 / dollax26   <- change it right after login.
-  5) Optional environment variables:
-        PORT / SERVER_PORT    port to listen on (auto-detected: 8080/3000/8000 too)
-        SECRET_KEY            keeps sessions across restarts (auto-saved if unset)
-        ADMIN_USERNAME / ADMIN_PASSWORD
-                              custom first-login owner account
-        DOLLAX_SINGLE_PORT=1  one listener only (low-memory mode)
-        DOLLAX_REFETCH=1      re-download the panel files on next start
+        requirements.txt   <- dependencies (KataBump installs them for you)
 
-  WHAT THIS FILE DOES
-  -------------------
-  On first start it downloads the panel source (~23 small files) from the
-  official repo and caches it in ./dollax_app, then boots the panel.
-  Panel data (database, keys) lives in ./dollax_data.
+  STEP BY STEP
+  ------------
+  1) Create the server
+       control.katabump.com -> New server -> Python 3.11 -> Create.
+  2) Put the two files on it (any ONE of these):
+       a) Console:            git clone https://github.com/dollax26-official/dollax-katabump.git .
+       b) Web file manager:   upload main.py and requirements.txt
+       c) SFTP:               copy the same two files
+  3) Startup tab -> Start command:   python main.py
+  4) (Optional) Environment variables -> see the table below.
+  5) Press START. Console shows:
+       [dollax] panel files ready (23 downloaded)     <- first boot only
+       [dollax] starting on 0.0.0.0:8080
+  6) Open the address from your dashboard (or your free *.kdns.fr domain).
+     Log in with  dollax26 / dollax26  and CHANGE THE PASSWORD right away
+     (Settings).
 
-  Offline fallback: from the KataBump console run
-      git clone https://github.com/dollax26-official/dollax26railwaytest.git dollax_app
-  and start again.
+  ENVIRONMENT VARIABLES (all optional)
+  ------------------------------------
+    PORT / SERVER_PORT    Port to listen on. 8080 / 3000 / 8000 are tried
+                          automatically if it is not set.
+    SECRET_KEY            Session signing key. Auto-generated and saved to
+                          ./dollax_data/secret_key.txt when not set.
+    ADMIN_USERNAME        Owner username for the first login (default dollax26).
+    ADMIN_PASSWORD        Owner password for the first login (default dollax26).
+    DOLLAX_SINGLE_PORT    "1" (default on KataBump) = one listener only.
+                          Set "0" to also open the :8080 safety-net port.
+    DOLLAX_LOW_POWER      "1" (default) = lower CPU priority, tighter limits.
+                          Set "0" on bigger paid plans.
+    DOLLAX_REFETCH        "1" = re-download the panel files on next start.
+    LOG_LEVEL             uvicorn log level: info | warning | error.
+
+  WHAT RUNS WHERE
+  ---------------
+    ./main.py             this launcher (part of the 2-file deploy)
+    ./requirements.txt    dependencies
+    ./dollax_app/         panel code (auto-downloaded + cached, ~2 MB)
+    ./dollax_data/        your data: database, keys, xray config
+
+  FREE TIER NOTES (CPU / RAM - ONLY HALF A CORE NEEDED)
+  -----------------------------------------------------
+   - One Python process and ONE HTTP listener by default -> idle ~0-2% CPU.
+   - Low-power mode is on: lower OS priority + capped concurrency.
+   - The Telegram poller stays off until you set a bot token.
+   - Avoid adding many panel-to-panel "nodes"; each adds a health check.
+   - No Xray binary is bundled: native VLESS-WS / Trojan-WS relay works
+     out of the box; WireGuard / Reality need an Xray-core on the host.
+
+  UPDATING
+  --------
+   Panel files are cached under ./dollax_app and refresh automatically when a
+   new launcher version arrives (or set DOLLAX_REFETCH=1 to force it).
+   Offline fallback:  git clone https://github.com/dollax26-official/dollax26railwaytest.git dollax_app
+
+  TROUBLESHOOTING
+  ---------------
+   - "Application failed to respond":
+       check the console for [dollax] starting on 0.0.0.0:PORT, then set the
+       PORT environment variable to that port (or the one in your dashboard).
+   - Stuck at "panel files are missing":
+       no internet on first boot -> use the git clone fallback above, restart.
+   - pip errors:
+       restart once; KataBump reinstalls requirements automatically.
+   - Forgot the password:
+       stop the server, delete ./dollax_data/dollax.db, start again (fresh
+       database, default login) - or reset it from the panel settings.
+
+  فارسی (خلاصه نصب)
+  -----------------
+   ۱) یک سرور پایتون بسازید (۳.۱۱).
+   ۲) دو فایل main.py و requirements.txt را بریزید (یا همین ریپو را
+      git clone کنید).
+   ۳) در تب Startup دستور شروع را بگذارید:  python main.py
+   ۴) ورود پیش‌فرض:  dollax26 / dollax26  — فوراً عوضش کنید.
+   حالت کم‌مصرف برای پلن رایگان به‌صورت پیش‌فرض روشن است.
 =============================================================================
 """
 import os
@@ -40,7 +108,7 @@ import threading
 import time
 import urllib.request
 
-APP_VERSION = "2026.10.02-r1"
+APP_VERSION = "2026.10.04-r2"
 
 MIRRORS = [
     "https://raw.githubusercontent.com/dollax26-official/dollax26railwaytest/main/",
@@ -175,6 +243,29 @@ def secret_key():
         pass
 
 
+def low_power_default():
+    val = os.environ.get("DOLLAX_LOW_POWER")
+    if val is None:
+        os.environ["DOLLAX_LOW_POWER"] = "1"
+        val = "1"
+    on = (val == "1")
+    if on:
+        try:
+            if hasattr(os, "nice"):
+                os.nice(5)
+        except Exception:
+            pass
+    return on
+
+
+def single_listener_default():
+    val = os.environ.get("DOLLAX_SINGLE_PORT")
+    if val is None:
+        os.environ["DOLLAX_SINGLE_PORT"] = "1"
+        val = "1"
+    return (val == "1")
+
+
 def port_candidates():
     ports = []
     for raw in (os.environ.get("PORT"), os.environ.get("SERVER_PORT"), "8080", "3000", "8000"):
@@ -192,6 +283,11 @@ def main():
     log("start command: python main.py  |  files -> ./dollax_app  |  data -> " + DATA_DIR)
     log("default login: dollax26 / dollax26  - change it right after first login")
     os.environ.setdefault("DATA_DIR", DATA_DIR)
+    os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
+    power = low_power_default()
+    single = single_listener_default()
+    log("low-power mode: %s  |  single listener: %s  (free-tier ready)"
+        % ("on" if power else "off", "on" if single else "off"))
     if not ensure_files():
         log("cannot start: panel files are missing and could not be downloaded.")
         log("try: git clone https://github.com/dollax26-official/dollax26railwaytest.git dollax_app")
@@ -208,13 +304,13 @@ def main():
         sys.exit(1)
     ports = port_candidates()
     primary = ports[0]
-    extra = 8080 if (primary != 8080 and os.environ.get("DOLLAX_SINGLE_PORT") != "1") else None
+    extra = 8080 if (primary != 8080 and not single) else None
     if extra:
         def extra_server():
             try:
                 log("also listening on 0.0.0.0:%d (safety net)" % extra)
                 uvicorn.run("main:app", host="0.0.0.0", port=extra, proxy_headers=True,
-                            forwarded_allow_ips="*",
+                            forwarded_allow_ips="*", limit_concurrency=100, timeout_keep_alive=15,
                             log_level=(os.environ.get("LOG_LEVEL") or "info"))
             except BaseException as exc:  # noqa: BLE001
                 log("extra listener stopped: %s" % exc.__class__.__name__)
@@ -224,7 +320,7 @@ def main():
         try:
             log("starting on 0.0.0.0:%d" % port)
             uvicorn.run("main:app", host="0.0.0.0", port=port, proxy_headers=True,
-                        forwarded_allow_ips="*",
+                        forwarded_allow_ips="*", limit_concurrency=100, timeout_keep_alive=15,
                         log_level=(os.environ.get("LOG_LEVEL") or "info"))
             break
         except SystemExit:
