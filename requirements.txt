@@ -1,4 +1,5 @@
-# Dollax Panel - KataBump deploy guide: see the header of main.py
+# Dollax Panel - KataBump deploy guide: read the header of main.py
+# Python servers use main.py + requirements.txt (index.js is only for Node.js).
 fastapi==0.116.1
 uvicorn==0.35.0
 websockets==15.0.1
